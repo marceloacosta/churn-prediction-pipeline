@@ -1,0 +1,36 @@
+# E-Commerce Customer Churn Dataset
+# Source: https://huggingface.co/datasets/d0r1h/customer_churn
+# Columns: CustomerID, Tenure, PreferredLoginDevice, CityTier,
+#          WarehouseToHome, PreferredPaymentMode, Gender, HourSpendOnApp,
+#          NumberOfDeviceRegistered, PreferedOrderCat, SatisfactionScore,
+#          MaritalStatus, NumberOfAddress, Complain, OrderAmountHikeFromlastYear,
+#          CouponUsed, OrderCount, DaySinceLastOrder, CashbackAmount, Churn
+
+client_id: "ecommerce_d0r1h"
+source_description: "d0r1h/customer_churn e-commerce dataset — ~37,000 customers with app engagement and order history"
+
+column_mappings:
+  CustomerID: customer_id
+  Tenure: tenure_months
+  CashbackAmount: monthly_charges
+  OrderCount: total_charges
+  Churn: churn_label
+  PreferredPaymentMode: payment_method
+  Gender: gender
+  Complain: support_tickets
+  MaritalStatus: partner_status
+
+value_mappings:
+  churn_label:
+    1: 1
+    0: 0
+  partner_status:
+    "Married": 1
+    "Single": 0
+    "Divorced": 0
+
+type_coercions:
+  tenure_months: "int"
+  monthly_charges: "float"
+  total_charges: "float"
+  support_tickets: "int"

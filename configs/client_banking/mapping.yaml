@@ -1,0 +1,28 @@
+# Banking Churn Modelling Dataset
+# Source: https://huggingface.co/datasets/moaminsharifi/Churn_Modelling
+# Columns: RowNumber, CustomerId, Surname, CreditScore, Geography, Gender,
+#          Age, Tenure, Balance, NumOfProducts, HasCrCard, IsActiveMember,
+#          EstimatedSalary, Exited
+
+client_id: "banking_churn"
+source_description: "moaminsharifi/Churn_Modelling banking dataset — 10,000 bank customers with credit and activity data"
+
+column_mappings:
+  CustomerId: customer_id
+  Tenure: tenure_months
+  EstimatedSalary: monthly_charges
+  Balance: total_charges
+  Exited: churn_label
+  Gender: gender
+  NumOfProducts: support_tickets
+
+value_mappings:
+  churn_label:
+    1: 1
+    0: 0
+
+type_coercions:
+  tenure_months: "int"
+  monthly_charges: "float"
+  total_charges: "float"
+  support_tickets: "int"
