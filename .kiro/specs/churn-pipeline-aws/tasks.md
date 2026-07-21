@@ -10,16 +10,33 @@ This plan implements a standalone churn prediction pipeline on AWS from scratch.
 **Infrastructure:** SageMaker Pipelines, S3, MLflow, SNS, Amazon Bedrock
 **Property-based testing library:** Hypothesis
 
+## Deliverable Per Task Phase
+
+Each task phase produces TWO outputs:
+1. **Production code** in `src/churn_pipeline/` — the tested, importable module
+2. **Teaching notebook** in `notebooks/` — Feynman-style explanation + interactive examples that demonstrate the module
+
+The notebook is where the reader learns and experiments. The src/ code is the production artifact. They reference each other. The notebooks are also the basis for Substack posts at https://buildwithaws.substack.com/
+
+Notebook mapping:
+- Tasks 1-2 → `notebooks/01_data_contract_and_mapping.ipynb` + `notebooks/02_schema_validation.ipynb`
+- Task 4 → `notebooks/03_feature_engineering.ipynb`
+- Task 5 → `notebooks/04_training_fundamentals.ipynb`
+- Tasks 6, 10 → `notebooks/05_evaluation_and_scoring.ipynb`
+- Task 9 → `notebooks/06_drift_monitoring.ipynb`
+- Tasks 12-13 → `notebooks/07_llm_integration.ipynb`
+- Tasks 15-16 → `notebooks/08_aws_architecture.ipynb`
+
 ## Tasks
 
-- [ ] 1. Project scaffolding and core data structures
-  - [ ] 1.1 Create project directory structure and dependencies
+- [x] 1. Project scaffolding and core data structures
+  - [x] 1.1 Create project directory structure and dependencies
     - Create directories: `src/churn_pipeline/`, `src/churn_pipeline/steps/`, `src/churn_pipeline/llm/`, `configs/`, `tests/`, `tests/property/`, `tests/unit/`, `tests/integration/`
     - Create `pyproject.toml` with dependencies: sagemaker, boto3, pandas, numpy, scikit-learn, xgboost, shap, pyyaml, mlflow, hypothesis, pytest, pytest-mock, moto
     - Create `src/churn_pipeline/__init__.py`
     - _Requirements: 9.1_
 
-  - [ ] 1.2 Implement data contract schema definition
+  - [x] 1.2 Implement data contract schema definition
     - Create `src/churn_pipeline/data_contract.py`
     - Define `Tier` enum (REQUIRED=1, ENGAGEMENT=2, DEMOGRAPHIC=3)
     - Define `FieldSpec` dataclass with: name, dtype, tier, description, allowed_values
@@ -27,7 +44,7 @@ This plan implements a standalone churn prediction pipeline on AWS from scratch.
     - Include Feynman-style docstrings explaining what each tier means and why
     - _Requirements: 2.1_
 
-  - [ ] 1.3 Implement mapping config parser and serializer
+  - [x] 1.3 Implement mapping config parser and serializer
     - Create `src/churn_pipeline/mapping_config.py`
     - Define `MappingConfig` dataclass: client_id, source_description, column_mappings, value_mappings, type_coercions
     - Implement `load_mapping_config(yaml_path) -> MappingConfig` to parse YAML
@@ -36,21 +53,21 @@ This plan implements a standalone churn prediction pipeline on AWS from scratch.
     - Include Feynman-style docstrings explaining the Rosetta Stone concept
     - _Requirements: 2.5, 2.6_
 
-  - [ ]* 1.4 Write property test for mapping config round-trip
+  - [x]* 1.4 Write property test for mapping config round-trip
     - **Property 1: Mapping Config Round-Trip Consistency**
     - Generate random valid MappingConfig objects using Hypothesis (random client_ids, random column_mappings dicts, random value_mappings, random type_coercions)
     - Serialize to YAML string, parse back, verify structural equivalence
     - Minimum 100 iterations
     - **Validates: Requirements 2.5, 2.6**
 
-  - [ ] 1.5 Create sample mapping configs for all three test datasets
+  - [x] 1.5 Create sample mapping configs for all three test datasets
     - Create `configs/client_telco/mapping.yaml` for IBM Telco dataset (customerID→customer_id, tenure→tenure_months, etc.)
     - Create `configs/client_ecommerce/mapping.yaml` for d0r1h/customer_churn dataset
     - Create `configs/client_banking/mapping.yaml` for moaminsharifi/Churn_Modelling dataset
     - _Requirements: 2.5_
 
-- [ ] 2. Schema validation
-  - [ ] 2.1 Implement dataset validator
+- [x] 2. Schema validation
+  - [x] 2.1 Implement dataset validator
     - Create `src/churn_pipeline/steps/validate_data.py`
     - Define `ValidationResult` dataclass: is_valid, tier1_present, tier1_missing, tier2_present, tier2_missing, tier3_present, tier3_missing, errors
     - Implement `validate_dataset(df, schema) -> ValidationResult`
@@ -58,14 +75,14 @@ This plan implements a standalone churn prediction pipeline on AWS from scratch.
     - Include Feynman-style docstrings explaining the "bouncer at the door" concept
     - _Requirements: 2.2, 2.3, 2.4_
 
-  - [ ]* 2.2 Write property test for schema validation completeness
+  - [x]* 2.2 Write property test for schema validation completeness
     - **Property 2: Schema Validation Completeness**
     - Generate random DataFrames with ALL Tier 1 fields + random Tier 2/3 subsets → verify is_valid=True always
     - Generate random DataFrames MISSING at least one Tier 1 field → verify is_valid=False always
     - Minimum 100 iterations
     - **Validates: Requirements 2.2, 2.3, 2.4**
 
-  - [ ]* 2.3 Write unit tests for schema validation edge cases
+  - [x]* 2.3 Write unit tests for schema validation edge cases
     - Test: empty dataframe → is_valid=False
     - Test: wrong types in Tier 1 field (string where int expected) → error reported
     - Test: exact Tier 1 only → is_valid=True with all Tier 2/3 logged as missing

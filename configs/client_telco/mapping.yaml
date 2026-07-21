@@ -1,0 +1,37 @@
+# IBM Telco Customer Churn Dataset
+# Source: https://www.kaggle.com/datasets/blastchar/telco-customer-churn
+# Columns: customerID, gender, SeniorCitizen, Partner, Dependents, tenure,
+#          PhoneService, MultipleLines, InternetService, OnlineSecurity,
+#          OnlineBackup, DeviceProtection, TechSupport, StreamingTV,
+#          StreamingMovies, Contract, PaperlessBilling, PaymentMethod,
+#          MonthlyCharges, TotalCharges, Churn
+
+client_id: "telco_ibm"
+source_description: "IBM Telco Customer Churn dataset — 7,043 customers with demographics, services, and churn labels"
+
+column_mappings:
+  customerID: customer_id
+  tenure: tenure_months
+  MonthlyCharges: monthly_charges
+  TotalCharges: total_charges
+  Churn: churn_label
+  Contract: contract_type
+  PaymentMethod: payment_method
+  gender: gender
+  Partner: partner_status
+
+value_mappings:
+  churn_label:
+    "Yes": 1
+    "No": 0
+  contract_type:
+    "Month-to-month": "month-to-month"
+    "One year": "one_year"
+    "Two year": "two_year"
+  partner_status:
+    "Yes": 1
+    "No": 0
+
+type_coercions:
+  total_charges: "float"
+  tenure_months: "int"
