@@ -23,3 +23,7 @@ build/
 # pytest
 .pytest_cache/
 .hypothesis/
+WA_Fn-UseC_-Telco-Customer-Churn.csv
+data/*.csv
+data/*.npy
+data/*.pkl
