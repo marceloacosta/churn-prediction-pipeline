@@ -23,7 +23,11 @@ build/
 # pytest
 .pytest_cache/
 .hypothesis/
-WA_Fn-UseC_-Telco-Customer-Churn.csv
+
+# Environment
+.env
+
+# Data artifacts (generated at runtime)
 data/*.csv
 data/*.npy
 data/*.pkl
