@@ -44,7 +44,6 @@ By the end of this course, you'll have a working system that:
 
 - **Python 3.11+** with pandas, scikit-learn, XGBoost, SHAP
 - **AWS:** SageMaker Pipelines, S3, Bedrock (Claude), MLflow
-- **Testing:** pytest + Hypothesis (property-based testing)
 - **LLMs:** Amazon Bedrock (Claude) for auto-mapping and narrative generation
 
 ## Running Locally
@@ -54,7 +53,7 @@ git clone https://github.com/marceloacosta/churn-prediction-pipeline.git
 cd churn-prediction-pipeline
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e .
 ```
 
 Then open notebooks in order from `modules/01-data-contracts/`.
@@ -62,12 +61,12 @@ Then open notebooks in order from `modules/01-data-contracts/`.
 ## Repo Structure
 
 ```
-├── modules/          # Course notebooks (one folder per module)
-├── src/churn_pipeline/  # Production code
-├── configs/          # Per-client mapping YAMLs
-├── data/             # Small sample datasets
-├── tests/            # Unit + property-based tests
-└── scripts/          # Utilities (badge generation, validation)
+├── modules/             # Course notebooks (one folder per module)
+├── src/churn_pipeline/  # The Python package notebooks import
+├── configs/             # Per-client mapping YAMLs
+├── data/                # Downloaded at runtime (not committed)
+├── pyproject.toml       # Package definition
+└── README.md            # This file
 ```
 
 ## Source of Truth
