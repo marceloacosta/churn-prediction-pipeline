@@ -20,10 +20,6 @@ build/
 # OS
 .DS_Store
 
-# pytest
-.pytest_cache/
-.hypothesis/
-
 # Environment
 .env
 
@@ -31,3 +27,11 @@ build/
 data/*.csv
 data/*.npy
 data/*.pkl
+
+# Internal dev tools (not part of the course)
+.kiro/
+tests/
+scripts/
+book/
+.hypothesis/
+.pytest_cache/
