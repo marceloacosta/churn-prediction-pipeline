@@ -2,25 +2,30 @@
 
 A hands-on course that builds a complete churn prediction system step by step. Start with a dirty dataset, end with a production ML pipeline on SageMaker — with LLMs where they make sense.
 
+> **🚧 Course in progress.** Modules 1–7 are available now. Modules 8–10 (SageMaker deployment, MLflow tracking, end-to-end integration) are coming soon. Follow the repo or [subscribe on Substack](https://buildwithaws.substack.com/) to get notified when new modules drop.
+
 ## How to Use This Course
 
 1. Click the **Open in Colab** badge next to the module you want.
 2. In Colab, go to **File → Save a copy in Drive** immediately.
 3. Work in YOUR copy. The original is read-only.
-4. Each module picks up where the previous one left off — run them in order.
+4. Each module is self-contained — it replays previous steps automatically so you can start anywhere.
 
 ## Modules
 
 <!-- BADGES:START -->
-| # | Module | Open in Colab |
-|---|--------|---------------|
-| 1 | 01 — Data Contracts | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/01-data-contracts/01-data-contracts.ipynb) |
-| 2 | 02 — Schema Validation | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/02-schema-validation/02-schema-validation.ipynb) |
-| 3 | 03 — Feature Engineering | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/03-feature-engineering/03-feature-engineering.ipynb) |
-| 4 | 04 — Training Fundamentals | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/04-training-fundamentals/04-training-fundamentals.ipynb) |
-| 5 | 05 — Evaluation | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/05-evaluation/05-evaluation.ipynb) |
-| 6 | 06 — Drift Monitoring | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/06-drift-monitoring/06-drift-monitoring.ipynb) |
-| 7 | 07 — Llm Integration | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/07-llm-integration/07-llm-integration.ipynb) |
+| # | Module | Status | Open in Colab |
+|---|--------|--------|---------------|
+| 1 | Data Contracts & Mapping | ✅ Available | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/01-data-contracts/01-data-contracts.ipynb) |
+| 2 | Schema Validation & Data Cleaning | ✅ Available | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/02-schema-validation/02-schema-validation.ipynb) |
+| 3 | Feature Engineering | ✅ Available | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/03-feature-engineering/03-feature-engineering.ipynb) |
+| 4 | Training & Scoring | ✅ Available | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/04-training-fundamentals/04-training-fundamentals.ipynb) |
+| 5 | Evaluation Gates | ✅ Available | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/05-evaluation/05-evaluation.ipynb) |
+| 6 | Drift Monitoring | ✅ Available | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/06-drift-monitoring/06-drift-monitoring.ipynb) |
+| 7 | LLM Integration | ✅ Available | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/marceloacosta/churn-prediction-pipeline/blob/main/modules/07-llm-integration/07-llm-integration.ipynb) |
+| 8 | SageMaker Pipelines (AWS Deployment) | 🔜 Coming soon | — |
+| 9 | MLflow Tracking & Experiment Management | 🔜 Coming soon | — |
+| 10 | End-to-End Integration & Production | 🔜 Coming soon | — |
 <!-- BADGES:END -->
 
 ## What You'll Build
