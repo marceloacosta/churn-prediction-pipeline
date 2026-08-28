@@ -38,3 +38,6 @@ book/
 
 # Generated course site (built by CI from site_src/)
 site/
+
+# Written by the notebook 07 approval demo when run from the repo
+client_configs/
