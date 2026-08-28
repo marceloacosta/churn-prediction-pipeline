@@ -1,0 +1,65 @@
+site_name: Churn Prediction Pipeline
+site_description: From messy CSV to production on AWS. A free hands-on course by Build with AWS.
+site_url: https://marceloacosta.github.io/churn-prediction-pipeline/
+repo_url: https://github.com/marceloacosta/churn-prediction-pipeline
+repo_name: churn-prediction-pipeline
+
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - scheme: slate
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - toc.integrate
+    - search.suggest
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocs-jupyter:
+      include_source: true
+      ignore_h1_titles: false
+      execute: false
+
+nav:
+  - Start here: index.md
+  - Course:
+      - "1 · Data Contracts & Mapping": modules/01-data-contracts/01-data-contracts.ipynb
+      - "2 · Schema Validation & Cleaning": modules/02-schema-validation/02-schema-validation.ipynb
+      - "3 · Feature Engineering": modules/03-feature-engineering/03-feature-engineering.ipynb
+      - "4 · Training & Scoring": modules/04-training-fundamentals/04-training-fundamentals.ipynb
+      - "5 · Evaluation Gates": modules/05-evaluation/05-evaluation.ipynb
+      - "6 · Drift Monitoring": modules/06-drift-monitoring/06-drift-monitoring.ipynb
+      - "7 · LLM Integration": modules/07-llm-integration/07-llm-integration.ipynb
+  - Coming soon:
+      - "8 · SageMaker Pipelines": coming-soon.md
+      - "9 · MLflow Tracking": coming-soon.md
+      - "10 · End-to-End Production": coming-soon.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/marceloacosta
+    - icon: material/email-newsletter
+      link: https://buildwithaws.substack.com/
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.details
+  - attr_list
