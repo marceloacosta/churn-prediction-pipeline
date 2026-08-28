@@ -29,6 +29,7 @@ import yaml
 
 from churn_pipeline.data_contract import STANDARD_SCHEMA
 from churn_pipeline.llm.bedrock import call_claude
+from churn_pipeline.mapping_config import draft_reason
 
 logger = logging.getLogger(__name__)
 
@@ -303,23 +304,23 @@ def write_draft_yaml(
 
 def is_mapping_approved(config_path: str) -> bool:
     """
-    Check if a mapping.yaml (not .draft.yaml) exists at the config path.
+    Check whether an approved mapping config exists at this path.
 
-    The pipeline only proceeds with a mapping config if the human has
-    approved it. Approval = the file exists as 'mapping.yaml' (not
-    'mapping.draft.yaml'). The human reviews the draft and renames it.
+    Approval means two things agree: the file is named 'mapping.yaml' rather than
+    'mapping.draft.yaml', and it does not still say 'status: draft' inside. The
+    human reviews the draft, edits it, and renames it.
+
+    This is the cheap look-before-you-leap check. load_mapping_config enforces the
+    same rule and raises MappingNotApprovedError, so skipping this call does not
+    get a draft into the pipeline.
 
     Args:
         config_path: Path to check (should end in mapping.yaml).
 
     Returns:
-        True if the approved mapping file exists. False if only a draft
-        exists or nothing exists.
+        True if an approved mapping file exists there. False if it is a draft,
+        or nothing is there at all.
     """
     import os
 
-    # The approved config must be exactly 'mapping.yaml', not '.draft.yaml'
-    if config_path.endswith(".draft.yaml"):
-        return False
-
-    return os.path.exists(config_path)
+    return os.path.exists(config_path) and not draft_reason(config_path)

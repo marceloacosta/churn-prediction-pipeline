@@ -53,6 +53,54 @@ class MappingConfig:
     type_coercions: Dict[str, str] = field(default_factory=dict)
 
 
+DRAFT_SUFFIX = ".draft.yaml"
+
+
+class MappingNotApprovedError(ValueError):
+    """
+    Raised when a mapping config exists but no human has signed it off.
+
+    This is the one failure in the LLM path that nothing downstream can catch. A
+    wrong mapping does not raise: it renames a column to the wrong standard field,
+    row counts still match, validation still passes, and the model trains on a
+    feature that means something other than its name. So the gate has to be here,
+    before the config is ever applied to data.
+    """
+
+
+def draft_reason(yaml_path: str, raw: Dict[str, Any] = None) -> str:
+    """
+    Explain why a config counts as an unapproved draft, or return "" if it is fine.
+
+    Two independent signals, because either one alone is easy to defeat by
+    accident: renaming the file without reading it, or editing it without
+    renaming. A config with no 'status' key at all is treated as approved, which
+    is what keeps every hand-written config from Chapter 1 working.
+
+    Args:
+        yaml_path: Path the config was loaded from. The filename is half the check.
+        raw: Already-parsed YAML, if you have it. Read from disk otherwise.
+
+    Returns:
+        A human-readable reason, or "" when the config is approved.
+    """
+    if yaml_path.endswith(DRAFT_SUFFIX):
+        return f"its filename ends in {DRAFT_SUFFIX}"
+
+    if raw is None:
+        try:
+            with open(yaml_path, "r") as f:
+                raw = yaml.safe_load(f) or {}
+        except (OSError, yaml.YAMLError):
+            # Unreadable is a different problem, and load_mapping_config reports it.
+            return ""
+
+    if str(raw.get("status", "")).lower() == "draft":
+        return "it still says 'status: draft' inside"
+
+    return ""
+
+
 def load_mapping_config(yaml_path: str) -> MappingConfig:
     """
     Parse a YAML mapping file into a MappingConfig object.
@@ -71,6 +119,9 @@ def load_mapping_config(yaml_path: str) -> MappingConfig:
         FileNotFoundError: If the YAML file doesn't exist.
         yaml.YAMLError: If the file isn't valid YAML.
         KeyError: If required field 'client_id' is missing.
+        MappingNotApprovedError: If the config is still a draft. There is no flag
+            to skip this. An unreviewed mapping is the one thing in this pipeline
+            that fails silently, so the only way past it is to review it.
     """
     with open(yaml_path, "r") as f:
         raw = yaml.safe_load(f)
@@ -80,6 +131,15 @@ def load_mapping_config(yaml_path: str) -> MappingConfig:
 
     if "client_id" not in raw:
         raise KeyError("Mapping config must contain 'client_id'")
+
+    reason = draft_reason(yaml_path, raw)
+    if reason:
+        raise MappingNotApprovedError(
+            f"Refusing to load {yaml_path}: {reason}. "
+            "An LLM-drafted mapping has to be reviewed by a person before the "
+            "pipeline uses it. Read the column mappings, fix what is wrong, set "
+            "'status: approved', and rename the file to mapping.yaml."
+        )
 
     return MappingConfig(
         client_id=raw["client_id"],
