@@ -54,7 +54,7 @@ img{max-width:100%}
 .stage.here .num{color:var(--signal)}
 .stage.soon{color:var(--faint)}
 .stage.soon .node{border-style:dashed}
-/* Setup is a detour, not a stage: it sits on the rail but off the pipeline line. */
+/* Setup sits on the rail but outside the numbered pipeline. */
 .stage.setup .node{background:var(--paper);border-color:var(--amber);border-style:dashed}
 .stage.setup .num{color:var(--amber);letter-spacing:.12em}
 .stage.setup.here .node{background:var(--amber);border-style:solid;

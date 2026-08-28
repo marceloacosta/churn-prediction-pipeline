@@ -12,8 +12,8 @@ codebase ever takes a key as an argument. See the "AWS credentials" setup page
 for how those get set in Colab.
 
 **Nothing here raises.** A failed call logs a warning and returns None. The
-caller decides what to do without a result — the pipeline treats both LLM steps
-as enhancements, not dependencies.
+caller decides what to do without a result; both LLM steps in this pipeline can
+finish their work without one.
 """
 
 import logging

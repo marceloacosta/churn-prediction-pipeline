@@ -20,8 +20,8 @@ STAGES = [
     ("06-drift-monitoring", "Drift monitoring", "Notice when the world stops matching your training data."),
     ("07-llm-integration", "LLM integration", "Bedrock for column mapping and plain-English reasons."),
 ]
-# Not a stage: the rail draws the pipeline, and configuring credentials is not a step
-# in it. It sits beside the first stage that needs them.
+# The rail draws the pipeline itself, so credential setup gets its own entry outside
+# the numbering, beside the first stage that needs it.
 SETUP = ("setup-aws-credentials", "AWS credentials",
          "One Bedrock API key, stored in Colab Secrets. Needed from stage 07 on.")
 SETUP_BEFORE = 7
