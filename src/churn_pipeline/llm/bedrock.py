@@ -1,6 +1,6 @@
 """
-Talking to Bedrock — the one place that knows how the model gets called
-=======================================================================
+Talking to Bedrock: the one place that knows how the model gets called
+======================================================================
 
 Both LLM steps in this pipeline do the same thing underneath: send a prompt,
 read back text. Neither of them cares that the text comes from Claude on Amazon
@@ -56,8 +56,8 @@ def call_claude(
     """
     Send one prompt to Claude on Bedrock and return the reply text.
 
-    Uses the Converse API, which takes the same shape for every model on Bedrock
-    — no provider-specific request body to hand-assemble.
+    Uses the Converse API, which takes the same shape for every model on Bedrock,
+    with no provider-specific request body to hand-assemble.
 
     Args:
         prompt: The user message.
@@ -68,7 +68,7 @@ def call_claude(
             whichever region the client resolved to.
 
     Returns:
-        The reply text, or None if the call failed for any reason — no
+        The reply text, or None if the call failed for any reason: no
         credentials, no region, model not enabled for this account, network
         failure, unexpected response shape. The logged warning names which.
     """
