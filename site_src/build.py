@@ -20,6 +20,12 @@ STAGES = [
     ("06-drift-monitoring", "Drift monitoring", "Notice when the world stops matching your training data."),
     ("07-llm-integration", "LLM integration", "Bedrock for column mapping and plain-English reasons."),
 ]
+# Not a stage: the rail draws the pipeline, and configuring credentials is not a step
+# in it. It sits beside the first stage that needs them.
+SETUP = ("setup-aws-credentials", "AWS credentials",
+         "One Bedrock API key, stored in Colab Secrets. Needed from stage 07 on.")
+SETUP_BEFORE = 7
+
 SOON = [
     ("SageMaker Pipelines", "Move the whole thing onto managed AWS infrastructure."),
     ("MLflow tracking", "Version experiments, parameters and models."),
@@ -93,7 +99,17 @@ def rail(active):
     """The signature element: chapters drawn as stages of one pipeline."""
     rows = []
     for i, (slug, name, _) in enumerate(STAGES, 1):
-        state = "done" if active and i < active else ("here" if i == active else "next")
+        if i == SETUP_BEFORE:
+            rows.append(
+                f'<a class="stage setup{" here" if active == "setup" else ""}"'
+                f' href="../{SETUP[0]}/index.html">'
+                f'<span class="node"></span><span class="num">&middot;&middot;</span>'
+                f'<span class="label">{html.escape(SETUP[1])}</span></a>'
+            )
+        if active == "setup":
+            state = "done" if i < SETUP_BEFORE else "next"
+        else:
+            state = "done" if active and i < active else ("here" if i == active else "next")
         rows.append(
             f'<a class="stage {state}" href="../{slug}/index.html">'
             f'<span class="node"></span><span class="num">{i:02d}</span>'
@@ -156,12 +172,15 @@ def build():
         prev_link = (f'<a class="pager-prev" href="../{STAGES[i-2][0]}/index.html">Previous stage</a>' if i > 1 else "")
         nxt = (f'<a class="pager-next" href="../{STAGES[i][0]}/index.html">Next stage</a>' if i < len(STAGES)
                else '<a class="pager-next" href="../coming-soon/index.html">What is next</a>')
+        creds_note = (f'<p class="creds-note">This stage calls Amazon Bedrock. '
+                      f'<a href="../{SETUP[0]}/index.html">Set up your credentials first</a> \u2014 '
+                      f'one API key in Colab Secrets, about five minutes.</p>' if i >= SETUP_BEFORE else "")
         head = f"""<div class="lesson-head">
   <p class="eyebrow">Stage {i:02d} of 10</p>
   <h1>{html.escape(nb_title or name)}</h1>
   <p class="lede">{html.escape(blurb)}</p>
   <div class="runbox">
-    <p>This page is for reading, so it skips the setup cells. To run the code, open the notebook in Colab and use <b>File &rsaquo; Save a copy in Drive</b> so your changes stick.</p>
+    {creds_note}<p>This page is for reading, so it skips the setup cells. To run the code, open the notebook in Colab and use <b>File &rsaquo; Save a copy in Drive</b> so your changes stick.</p>
     <a class="run" href="{colab}" target="_blank" rel="noopener">Run stage {i:02d} in Colab</a>
   </div>
 </div>"""
@@ -169,9 +188,29 @@ def build():
              head + f'<article class="prose">{body}</article>'
              + f'<div class="pager">{prev_link}{nxt}</div>', active=i)
 
+    setup_slug, setup_name, setup_blurb = SETUP
+    nb_path = next((ROOT / "modules" / setup_slug).glob("*.ipynb"))
+    nb_title, body = render_notebook(nb_path)
+    colab = f"https://colab.research.google.com/github/{REPO}/blob/main/modules/{setup_slug}/{nb_path.name}"
+    page(OUT / setup_slug / "index.html", f"{nb_title or setup_name} \u2014 Churn Prediction Pipeline", setup_blurb,
+         f"""<div class="lesson-head">
+  <p class="eyebrow">Setup &middot; needed from stage {SETUP_BEFORE:02d}</p>
+  <h1>{html.escape(nb_title or setup_name)}</h1>
+  <p class="lede">{html.escape(setup_blurb)}</p>
+  <div class="runbox">
+    <p>Stages 01 to {SETUP_BEFORE - 1:02d} need nothing but a browser. This page only matters once you reach stage {SETUP_BEFORE:02d}, the first one that calls a real model.</p>
+    <a class="run" href="{colab}" target="_blank" rel="noopener">Open the setup notebook in Colab</a>
+  </div>
+</div>"""
+         + f'<article class="prose">{body}</article>'
+         + f'<div class="pager">'
+           f'<a class="pager-prev" href="../{STAGES[SETUP_BEFORE - 2][0]}/index.html">Previous stage</a>'
+           f'<a class="pager-next" href="../{STAGES[SETUP_BEFORE - 1][0]}/index.html">On to stage {SETUP_BEFORE:02d}</a></div>',
+         active="setup")
+
     soon_rows = "".join(
         f'<li><span class="num">{i:02d}</span><div><h3>{html.escape(n)}</h3><p>{html.escape(d)}</p></div></li>'
-        for i, (n, d) in enumerate(SOON, 8))
+        for i, (n, d) in enumerate(SOON, len(STAGES) + 1))
     page(OUT / "coming-soon" / "index.html", "Coming soon — Churn Prediction Pipeline",
          "Stages 8 to 10 take the pipeline to production on AWS.",
          f"""<div class="lesson-head"><p class="eyebrow">Stages 08 to 10 &middot; In progress</p>
@@ -181,10 +220,17 @@ def build():
 <div class="runbox"><p>Each stage goes out to the Build with AWS list the day it is published.</p>
 <a class="run" href="{SUBSTACK}">Get an email when they land</a></div>""")
 
-    cards = "".join(
-        f'<a class="card" href="{slug}/index.html"><span class="num">{i:02d}</span>'
-        f'<h3>{html.escape(n)}</h3><p>{html.escape(b)}</p></a>'
-        for i, (slug, n, b) in enumerate(STAGES, 1))
+    card_items = []
+    for i, (slug, n, b) in enumerate(STAGES, 1):
+        if i == SETUP_BEFORE:
+            card_items.append(
+                f'<a class="card setup-card" href="{SETUP[0]}/index.html">'
+                f'<span class="num">&middot;&middot;</span>'
+                f'<h3>{html.escape(SETUP[1])}</h3><p>{html.escape(SETUP[2])}</p></a>')
+        card_items.append(
+            f'<a class="card" href="{slug}/index.html"><span class="num">{i:02d}</span>'
+            f'<h3>{html.escape(n)}</h3><p>{html.escape(b)}</p></a>')
+    cards = "".join(card_items)
     soon_cards = "".join(
         f'<a class="card soon-card" href="coming-soon/index.html"><span class="num">{i:02d}</span>'
         f'<h3>{html.escape(n)}</h3><p>{html.escape(d)}</p></a>'
