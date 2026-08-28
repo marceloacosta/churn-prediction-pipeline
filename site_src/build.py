@@ -137,7 +137,7 @@ document.querySelectorAll('.nb-copy').forEach(function(b){{
 def page(path, title, desc, body, active=None, root="../"):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(SHELL.format(title=html.escape(title), desc=html.escape(desc), body=body,
-                                 rail=rail(active), root=root, repo=REPO, substack=SUBSTACK))
+                                 rail=rail(active).replace('href="../', f'href="{root}'), root=root, repo=REPO, substack=SUBSTACK))
 
 
 def build():
