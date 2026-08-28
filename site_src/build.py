@@ -58,9 +58,12 @@ def render_outputs(cell):
 def render_notebook(path):
     nb = json.loads(path.read_text())
     cells = nb["cells"]
-    # Drop the Colab-only "save a copy in Drive" banner: it has no meaning on the web.
-    if cells and cells[0]["cell_type"] == "markdown" and "Save a copy in Drive" in "".join(cells[0]["source"]):
-        cells = cells[1:]
+    # Everything before the chapter title is Colab plumbing: the read-only banner,
+    # the pip install, and the cells that replay earlier chapters. Needed to run the
+    # notebook, pure noise when you are only reading it.
+    start = next((i for i, c in enumerate(cells)
+                  if c["cell_type"] == "markdown" and "".join(c["source"]).lstrip().startswith("# ")), 0)
+    cells = cells[start:]
     parts, title = [], None
     for cell in cells:
         src = "".join(cell["source"]).strip()
@@ -158,7 +161,7 @@ def build():
   <h1>{html.escape(nb_title or name)}</h1>
   <p class="lede">{html.escape(blurb)}</p>
   <div class="runbox">
-    <p>This page is for reading. To run the code, open the notebook in Colab, then use <b>File &rsaquo; Save a copy in Drive</b> so your changes stick.</p>
+    <p>This page is for reading, so it skips the setup cells. To run the code, open the notebook in Colab and use <b>File &rsaquo; Save a copy in Drive</b> so your changes stick.</p>
     <a class="run" href="{colab}" target="_blank" rel="noopener">Run stage {i:02d} in Colab</a>
   </div>
 </div>"""
