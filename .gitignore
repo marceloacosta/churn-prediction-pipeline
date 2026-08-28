@@ -35,3 +35,6 @@ scripts/
 book/
 .hypothesis/
 .pytest_cache/
+
+# Generated course site (built by CI from site_src/)
+site/
