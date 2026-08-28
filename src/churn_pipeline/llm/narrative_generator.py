@@ -22,10 +22,11 @@ roughly $0.01-0.02 per batch. The whole step costs cents, not dollars.
 top_3_reasons column — just not the English paragraphs.
 """
 
-import json
 import logging
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+
+from churn_pipeline.llm.bedrock import call_claude
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +135,7 @@ NARRATIVE: [your explanation]
 def call_bedrock_for_narratives(
     prompt: str,
     boto3_client=None,
-    model_id: str = "anthropic.claude-3-haiku-20240307-v1:0",
+    model_id: Optional[str] = None,
 ) -> Optional[Dict[str, str]]:
     """
     Call Amazon Bedrock (Claude) to generate narratives for a batch.
@@ -145,41 +146,23 @@ def call_bedrock_for_narratives(
     Args:
         prompt: The narrative prompt (from build_narrative_prompt).
         boto3_client: Optional pre-configured Bedrock client (for testing).
-        model_id: Which Claude model to use.
+        model_id: Which Claude model to use. Defaults to the model for
+            whichever region the client resolved to.
 
     Returns:
         Dict mapping customer_id to narrative text, or None if the call failed.
     """
-    import boto3
-
-    try:
-        if boto3_client is None:
-            boto3_client = boto3.client("bedrock-runtime")
-
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 8192,
-            "system": SYSTEM_PROMPT,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
-        })
-
-        response = boto3_client.invoke_model(
-            modelId=model_id,
-            body=body,
-            contentType="application/json",
-            accept="application/json",
-        )
-
-        response_body = json.loads(response["body"].read())
-        response_text = response_body["content"][0]["text"]
-
-        return parse_narrative_response(response_text, [])
-
-    except Exception as e:
-        logger.warning(f"Bedrock narrative generation failed: {e}")
+    response_text = call_claude(
+        prompt,
+        system=SYSTEM_PROMPT,
+        max_tokens=8192,
+        boto3_client=boto3_client,
+        model_id=model_id,
+    )
+    if response_text is None:
         return None
+
+    return parse_narrative_response(response_text, [])
 
 
 def parse_narrative_response(

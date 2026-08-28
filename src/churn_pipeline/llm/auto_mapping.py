@@ -28,6 +28,7 @@ from typing import Dict, List, Optional, Tuple
 import yaml
 
 from churn_pipeline.data_contract import STANDARD_SCHEMA
+from churn_pipeline.llm.bedrock import call_claude
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +190,7 @@ Only map columns where you have reasonable confidence. It's better to leave a co
 def call_bedrock_for_mapping(
     prompt: str,
     boto3_client=None,
-    model_id: str = "anthropic.claude-3-haiku-20240307-v1:0",
+    model_id: Optional[str] = None,
 ) -> Optional[List[ColumnMapping]]:
     """
     Call Amazon Bedrock (Claude) with the mapping prompt.
@@ -200,41 +201,22 @@ def call_bedrock_for_mapping(
     Args:
         prompt: The mapping prompt (from build_mapping_prompt).
         boto3_client: Optional pre-configured Bedrock client (for testing).
-        model_id: Which Claude model to use.
+        model_id: Which Claude model to use. Defaults to the model for
+            whichever region the client resolved to.
 
     Returns:
         List of ColumnMapping objects, or None if the call failed.
     """
-    import boto3
-
-    try:
-        if boto3_client is None:
-            boto3_client = boto3.client("bedrock-runtime")
-
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 4096,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
-        })
-
-        response = boto3_client.invoke_model(
-            modelId=model_id,
-            body=body,
-            contentType="application/json",
-            accept="application/json",
-        )
-
-        response_body = json.loads(response["body"].read())
-        response_text = response_body["content"][0]["text"]
-
-        # Parse the JSON response
-        return _parse_mapping_response(response_text)
-
-    except Exception as e:
-        logger.warning(f"Bedrock auto-mapping call failed: {e}")
+    response_text = call_claude(
+        prompt,
+        max_tokens=4096,
+        boto3_client=boto3_client,
+        model_id=model_id,
+    )
+    if response_text is None:
         return None
+
+    return _parse_mapping_response(response_text)
 
 
 def _parse_mapping_response(response_text: str) -> Optional[List[ColumnMapping]]:
