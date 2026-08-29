@@ -17,16 +17,18 @@ The LLM does this translation at scale — for dozens of customers in seconds.
 Bedrock call. At ~$0.003 per 1K input tokens, processing 50 customers costs
 roughly $0.01-0.02 per batch. The whole step costs cents, not dollars.
 
-**Non-blocking:** If Bedrock fails, the narrative_explanation field is set to
-"N/A" and the pipeline continues. Clients still get SHAP reasons in the
-top_3_reasons column — just not the English paragraphs.
+**Failures are counted against a budget.** A customer whose narrative failed is
+recorded with the reason, and "N/A" goes in the output. A run that fails more
+customers than its failure budget raises NarrativeGenerationError and ships
+nothing. Clients keep their SHAP reasons in top_3_reasons either way.
 """
 
 import logging
+from collections import Counter
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from churn_pipeline.llm.bedrock import call_claude
+from churn_pipeline.llm.bedrock import BedrockCallError, call_claude
 
 logger = logging.getLogger(__name__)
 
@@ -59,17 +61,35 @@ class NarrativeRequest:
 @dataclass
 class NarrativeResult:
     """
-    Output for one customer — the generated narrative or a failure marker.
+    Output for one customer: the generated narrative, or a failure with its reason.
 
     Attributes:
         customer_id: Who this is about.
         narrative: Plain-English explanation (under 150 words), or "N/A" on failure.
-        success: Whether the LLM call succeeded for this customer.
+        success: Whether a narrative came back for this customer.
+        failure_reason: Why it did not, when success is False. This is what turns
+            a sea of "N/A" into something an operator can act on.
     """
 
     customer_id: str
     narrative: str
     success: bool
+    failure_reason: Optional[str] = None
+
+
+class NarrativeGenerationError(RuntimeError):
+    """
+    Raised when a narrative run fails more customers than its budget allows.
+
+    One missing narrative is a recorded reason in the results. Most of them
+    missing is an outage, and an outage should end in an error, because a
+    delivered file that says "N/A" hundreds of times is how a client finds out
+    before you do. The partial results, reasons included, are on .results.
+    """
+
+    def __init__(self, message: str, results: Dict[str, "NarrativeResult"]):
+        super().__init__(message)
+        self.results = results
 
 
 def build_narrative_prompt(
@@ -137,12 +157,9 @@ def call_bedrock_for_narratives(
     prompt: str,
     boto3_client=None,
     model_id: Optional[str] = None,
-) -> Optional[Dict[str, str]]:
+) -> Dict[str, str]:
     """
     Call Amazon Bedrock (Claude) to generate narratives for a batch.
-
-    Returns {customer_id: narrative_text} or None on failure.
-    Non-blocking: if Bedrock fails, returns None.
 
     Args:
         prompt: The narrative prompt (from build_narrative_prompt).
@@ -151,7 +168,10 @@ def call_bedrock_for_narratives(
             whichever region the client resolved to.
 
     Returns:
-        Dict mapping customer_id to narrative text, or None if the call failed.
+        Dict mapping customer_id to narrative text.
+
+    Raises:
+        BedrockCallError: if the call fails, straight from call_claude.
     """
     response_text = call_claude(
         prompt,
@@ -160,9 +180,6 @@ def call_bedrock_for_narratives(
         boto3_client=boto3_client,
         model_id=model_id,
     )
-    if response_text is None:
-        return None
-
     return parse_narrative_response(response_text, [])
 
 
@@ -228,54 +245,81 @@ def generate_narratives_for_batch(
     batch_size: int = 50,
     feature_definitions: Dict[str, str] = None,
     boto3_client=None,
+    failure_budget: float = 0.10,
 ) -> Dict[str, NarrativeResult]:
     """
-    Process all customers in batches, generating narratives for each.
+    Generate narratives for every customer, in batches, and account for failures.
 
-    If a batch fails, those customers get success=False and narrative="N/A".
-    The pipeline continues regardless — narratives are nice-to-have, not blocking.
+    Each batch is one Bedrock call. When a call fails, every customer in that
+    batch is recorded with the reason and "N/A" as the narrative; when a reply
+    skips a customer, that is recorded too. The run then compares its failure
+    rate against failure_budget:
+
+    - At or under the budget, the results come back with the failed customers
+      in them, so the caller can put the rate and the reasons in its run summary.
+    - Over the budget, the run raises NarrativeGenerationError. Shipping a file
+      that is mostly "N/A" is worse than shipping nothing, and the partial
+      results ride on the exception's .results for whoever handles it.
 
     Args:
         scored_customers: All customers needing narratives.
         batch_size: How many customers per Bedrock call (default: 50).
         feature_definitions: Optional feature descriptions for better narratives.
         boto3_client: Optional pre-configured Bedrock client.
+        failure_budget: Highest tolerable fraction of failed customers
+            (default: 0.10).
 
     Returns:
         Dict mapping customer_id to NarrativeResult.
+
+    Raises:
+        NarrativeGenerationError: when the failure rate exceeds failure_budget.
     """
     results: Dict[str, NarrativeResult] = {}
 
-    # Process in batches
     for i in range(0, len(scored_customers), batch_size):
         batch = scored_customers[i : i + batch_size]
-        batch_ids = [req.customer_id for req in batch]
-
         prompt = build_narrative_prompt(batch, feature_definitions)
-        narratives = call_bedrock_for_narratives(prompt, boto3_client=boto3_client)
 
-        if narratives is None:
-            # Batch failed — mark all customers in this batch as failed
+        try:
+            narratives = call_bedrock_for_narratives(prompt, boto3_client=boto3_client)
+        except BedrockCallError as e:
+            # The whole batch failed for one reason; record it on every customer in it.
             for req in batch:
                 results[req.customer_id] = NarrativeResult(
                     customer_id=req.customer_id,
                     narrative="N/A",
                     success=False,
+                    failure_reason=str(e),
                 )
-        else:
-            # Match narratives to customers
-            for req in batch:
-                if req.customer_id in narratives:
-                    results[req.customer_id] = NarrativeResult(
-                        customer_id=req.customer_id,
-                        narrative=narratives[req.customer_id],
-                        success=True,
-                    )
-                else:
-                    results[req.customer_id] = NarrativeResult(
-                        customer_id=req.customer_id,
-                        narrative="N/A",
-                        success=False,
-                    )
+            continue
+
+        for req in batch:
+            if req.customer_id in narratives:
+                results[req.customer_id] = NarrativeResult(
+                    customer_id=req.customer_id,
+                    narrative=narratives[req.customer_id],
+                    success=True,
+                )
+            else:
+                results[req.customer_id] = NarrativeResult(
+                    customer_id=req.customer_id,
+                    narrative="N/A",
+                    success=False,
+                    failure_reason="the model's reply did not include this customer",
+                )
+
+    failed = [r for r in results.values() if not r.success]
+    failure_rate = len(failed) / len(results) if results else 0.0
+
+    if failure_rate > failure_budget:
+        reasons = Counter(r.failure_reason for r in failed)
+        summary = "; ".join(f"{count}x {reason}" for reason, count in reasons.most_common(3))
+        raise NarrativeGenerationError(
+            f"{len(failed)} of {len(results)} narratives failed "
+            f"({failure_rate:.0%}), over the {failure_budget:.0%} failure budget. "
+            f"Reasons: {summary}",
+            results=results,
+        )
 
     return results

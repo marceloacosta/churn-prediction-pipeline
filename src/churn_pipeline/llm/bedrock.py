@@ -11,16 +11,24 @@ and `AWS_DEFAULT_REGION` from the environment on its own, so no function in this
 codebase ever takes a key as an argument. See the "AWS credentials" setup page
 for how those get set in Colab.
 
-**Nothing here raises.** A failed call logs a warning and returns None. The
-caller decides what to do without a result; both LLM steps in this pipeline can
-finish their work without one.
+**Failures are loud.** A failed call raises BedrockCallError, and the message
+names the cause: an expired key, throttling, a missing region, an unreachable
+service, a reply with no text in it. Each caller decides what a failure means
+for its own step; nothing here pretends a call succeeded.
 """
 
-import logging
 import os
 from typing import Optional
 
-logger = logging.getLogger(__name__)
+
+class BedrockCallError(RuntimeError):
+    """A Bedrock call failed. The message names the cause.
+
+    "AccessDeniedException: ..." is an invalid, expired or unauthorised key.
+    "ThrottlingException: ..." is rate limiting, and a retry can help.
+    "EndpointConnectionError: ..." means the service could not be reached.
+    "NoRegionError: ..." means AWS_DEFAULT_REGION is not set.
+    """
 
 # The model family we use. Bedrock reaches Claude through a cross-region
 # inference profile, so what actually gets sent is prefixed with the region's
@@ -52,7 +60,7 @@ def call_claude(
     max_tokens: int = 4096,
     boto3_client=None,
     model_id: Optional[str] = None,
-) -> Optional[str]:
+) -> str:
     """
     Send one prompt to Claude on Bedrock and return the reply text.
 
@@ -68,11 +76,15 @@ def call_claude(
             whichever region the client resolved to.
 
     Returns:
-        The reply text, or None if the call failed for any reason: no
-        credentials, no region, model not enabled for this account, network
-        failure, unexpected response shape. The logged warning names which.
+        The reply text.
+
+    Raises:
+        BedrockCallError: on any failure, with the cause in the message: no
+            credentials, no region, model not enabled for this account, network
+            failure, a reply with no text in it.
     """
     import boto3
+    import botocore.exceptions
 
     try:
         if boto3_client is None:
@@ -93,6 +105,12 @@ def call_claude(
         response = boto3_client.converse(**kwargs)
         return response["output"]["message"]["content"][0]["text"]
 
+    except botocore.exceptions.ClientError as e:
+        err = e.response.get("Error", {})
+        raise BedrockCallError(
+            f"{err.get('Code', 'ClientError')}: {err.get('Message', '')}".strip(": ")
+        ) from e
+    except (KeyError, IndexError, TypeError) as e:
+        raise BedrockCallError(f"the reply had no text in it ({type(e).__name__})") from e
     except Exception as e:
-        logger.warning(f"Bedrock call failed: {type(e).__name__}: {e}")
-        return None
+        raise BedrockCallError(f"{type(e).__name__}: {e}") from e

@@ -16,8 +16,9 @@ dictionary of synonyms. "MonthlyCharges", "mrr", "monthly_fee", "amt_per_month",
 "recurring_revenue" — the list never ends. An LLM handles all of these because it
 understands language, not just exact matches.
 
-**This step is non-blocking:** if Bedrock fails, the pipeline continues without
-auto-mapping. The operator writes the YAML manually. No data is lost.
+**On failure this step raises.** A failed call surfaces as a BedrockCallError in
+front of the operator running onboarding, no draft is written, and the operator
+writes the YAML by hand. The approval gate downstream does not change either way.
 """
 
 import json
@@ -28,7 +29,7 @@ from typing import Dict, List, Optional, Tuple
 import yaml
 
 from churn_pipeline.data_contract import STANDARD_SCHEMA
-from churn_pipeline.llm.bedrock import call_claude
+from churn_pipeline.llm.bedrock import BedrockCallError, call_claude
 from churn_pipeline.mapping_config import draft_reason
 
 logger = logging.getLogger(__name__)
@@ -192,12 +193,9 @@ def call_bedrock_for_mapping(
     prompt: str,
     boto3_client=None,
     model_id: Optional[str] = None,
-) -> Optional[List[ColumnMapping]]:
+) -> List[ColumnMapping]:
     """
     Call Amazon Bedrock (Claude) with the mapping prompt.
-
-    Returns parsed mappings or None if the call fails.
-    Non-blocking: failures are logged and the function returns None.
 
     Args:
         prompt: The mapping prompt (from build_mapping_prompt).
@@ -206,7 +204,12 @@ def call_bedrock_for_mapping(
             whichever region the client resolved to.
 
     Returns:
-        List of ColumnMapping objects, or None if the call failed.
+        List of ColumnMapping objects.
+
+    Raises:
+        BedrockCallError: if the call fails, or the reply is not the JSON the
+            prompt asked for. Auto-mapping has no useful partial result, so a
+            reply we cannot parse is the same as no reply.
     """
     response_text = call_claude(
         prompt,
@@ -214,10 +217,11 @@ def call_bedrock_for_mapping(
         boto3_client=boto3_client,
         model_id=model_id,
     )
-    if response_text is None:
-        return None
 
-    return _parse_mapping_response(response_text)
+    mappings = _parse_mapping_response(response_text)
+    if mappings is None:
+        raise BedrockCallError("the model's reply was not valid JSON")
+    return mappings
 
 
 def _parse_mapping_response(response_text: str) -> Optional[List[ColumnMapping]]:
