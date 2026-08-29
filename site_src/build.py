@@ -8,6 +8,8 @@ from pygments.lexers import PythonLexer
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "site"
+# Only used to build Colab URLs. Colab opens a public notebook by its GitHub path,
+# so this is machinery for the Run buttons, not a link to the repo.
 REPO = "marceloacosta/churn-prediction-pipeline"
 SUBSTACK = "https://buildwithaws.substack.com/"
 
@@ -26,10 +28,27 @@ SETUP = ("setup-aws-credentials", "AWS credentials",
          "One Bedrock API key, stored in Colab Secrets. Needed from stage 07 on.")
 SETUP_BEFORE = 7
 
+# Each upcoming stage gets its own page. One shared "coming soon" page meant clicking
+# MLflow tracking landed you on a description of all three.
 SOON = [
-    ("SageMaker Pipelines", "Move the whole thing onto managed AWS infrastructure."),
-    ("MLflow tracking", "Version experiments, parameters and models."),
-    ("End-to-end production", "Wire it together and run it for real."),
+    ("08-sagemaker-pipelines", "SageMaker Pipelines",
+     "Move the whole thing onto managed AWS infrastructure.",
+     "Everything so far runs on one machine, in order, because you pressed shift-enter. "
+     "This stage defines the same steps as a SageMaker Pipeline: each one gets its own "
+     "instance, its inputs and outputs live in S3, and a full run becomes a single API "
+     "call you can trigger from anywhere."),
+    ("09-mlflow-tracking", "MLflow tracking",
+     "Version experiments, parameters and models.",
+     "Today a training run leaves an AUC in a notebook output and nothing else. Once a "
+     "model is in front of someone, you need to answer what changed between the version "
+     "you shipped and the one you are looking at now. This stage records the parameters, "
+     "the metrics and the model artifact for every run, so that question has an answer."),
+    ("10-end-to-end-production", "End-to-end production",
+     "Wire it together and run it for real.",
+     "The last stage joins the pieces: a schedule, the S3 layout that keeps one client's "
+     "data away from another's, the drift job from stage 06 running on a cadence instead "
+     "of on demand, and what is supposed to happen when a run fails at three in the "
+     "morning."),
 ]
 
 MD = markdown.Markdown(extensions=["fenced_code", "tables", "attr_list"])
@@ -115,9 +134,9 @@ def rail(active):
             f'<span class="node"></span><span class="num">{i:02d}</span>'
             f'<span class="label">{html.escape(name)}</span></a>'
         )
-    for i, (name, _) in enumerate(SOON, len(STAGES) + 1):
+    for i, (slug, name, _, _) in enumerate(SOON, len(STAGES) + 1):
         rows.append(
-            f'<a class="stage soon" href="../coming-soon/index.html">'
+            f'<a class="stage soon{" here" if i == active else ""}" href="../{slug}/index.html">'
             f'<span class="node"></span><span class="num">{i:02d}</span>'
             f'<span class="label">{html.escape(name)}</span></a>'
         )
@@ -134,7 +153,7 @@ SHELL = """<!doctype html>
 </head><body>
 <header class="top">
   <a class="brand" href="{root}index.html"><span class="brand-mark"></span>Churn Prediction Pipeline</a>
-  <div class="top-right"><a href="https://github.com/{repo}">GitHub</a><a class="cta" href="{substack}">Subscribe</a></div>
+  <div class="top-right"><a class="cta" href="{substack}">Subscribe</a></div>
 </header>
 <div class="shell">
   <aside class="side">{rail}</aside>
@@ -157,7 +176,7 @@ document.querySelectorAll('.nb-copy').forEach(function(b){{
 def page(path, title, desc, body, active=None, root="../"):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(SHELL.format(title=html.escape(title), desc=html.escape(desc), body=body,
-                                 rail=rail(active).replace('href="../', f'href="{root}'), root=root, repo=REPO, substack=SUBSTACK))
+                                 rail=rail(active).replace('href="../', f'href="{root}'), root=root, substack=SUBSTACK))
 
 
 def build():
@@ -171,7 +190,7 @@ def build():
         colab = f"https://colab.research.google.com/github/{REPO}/blob/main/modules/{slug}/{nb_path.name}"
         prev_link = (f'<a class="pager-prev" href="../{STAGES[i-2][0]}/index.html">Previous stage</a>' if i > 1 else "")
         nxt = (f'<a class="pager-next" href="../{STAGES[i][0]}/index.html">Next stage</a>' if i < len(STAGES)
-               else '<a class="pager-next" href="../coming-soon/index.html">What is next</a>')
+               else f'<a class="pager-next" href="../{SOON[0][0]}/index.html">What is next</a>')
         creds_note = (f'<p class="creds-note">This stage calls Amazon Bedrock. '
                       f'<a href="../{SETUP[0]}/index.html">Set up your credentials first</a> \u2014 '
                       f'one API key in Colab Secrets, about five minutes.</p>' if i >= SETUP_BEFORE else "")
@@ -208,17 +227,28 @@ def build():
            f'<a class="pager-next" href="../{STAGES[SETUP_BEFORE - 1][0]}/index.html">On to stage {SETUP_BEFORE:02d}</a></div>',
          active="setup")
 
-    soon_rows = "".join(
-        f'<li><span class="num">{i:02d}</span><div><h3>{html.escape(n)}</h3><p>{html.escape(d)}</p></div></li>'
-        for i, (n, d) in enumerate(SOON, len(STAGES) + 1))
-    page(OUT / "coming-soon" / "index.html", "Coming soon — Churn Prediction Pipeline",
-         "Stages 8 to 10 take the pipeline to production on AWS.",
-         f"""<div class="lesson-head"><p class="eyebrow">Stages 08 to 10 &middot; In progress</p>
-<h1>From your laptop to production</h1>
-<p class="lede">After stage 07 you have a pipeline that runs end to end on your machine. These three stages move it onto AWS, make every run reproducible, and wire the whole thing together so it can run unattended.</p></div>
-<ol class="soon-list">{soon_rows}</ol>
-<div class="runbox"><p>Each stage goes out to the Build with AWS list the day it is published.</p>
-<a class="run" href="{SUBSTACK}">Get an email when they land</a></div>""")
+    total = len(STAGES) + len(SOON)
+    for n, (slug, name, blurb, detail) in enumerate(SOON, len(STAGES) + 1):
+        prev_slug = STAGES[-1][0] if n == len(STAGES) + 1 else SOON[n - len(STAGES) - 2][0]
+        nxt = (f'<a class="pager-next" href="../{SOON[n - len(STAGES)][0]}/index.html">Next stage</a>'
+               if n < total else "")
+        page(OUT / slug / "index.html", f"{name} — Churn Prediction Pipeline", blurb,
+             f"""<div class="lesson-head">
+  <p class="eyebrow">Stage {n:02d} of {total}</p>
+  <h1>{html.escape(name)}</h1>
+  <p class="lede">{html.escape(blurb)}</p>
+</div>
+<div class="wip">
+  <p class="wip-tag">Not published yet</p>
+  <p>This stage is still being written. Stages 01 to {len(STAGES):02d} are finished, and you can read and run them now.</p>
+</div>
+<article class="prose"><p>{html.escape(detail)}</p></article>
+<div class="runbox">
+  <p>Stage {n:02d} goes out to the Build with AWS list the day it is published. One email per stage, nothing else.</p>
+  <a class="run" href="{SUBSTACK}">Email me when stage {n:02d} is live</a>
+</div>
+<div class="pager"><a class="pager-prev" href="../{prev_slug}/index.html">Previous stage</a>{nxt}</div>""",
+             active=n)
 
     card_items = []
     for i, (slug, n, b) in enumerate(STAGES, 1):
@@ -232,17 +262,17 @@ def build():
             f'<h3>{html.escape(n)}</h3><p>{html.escape(b)}</p></a>')
     cards = "".join(card_items)
     soon_cards = "".join(
-        f'<a class="card soon-card" href="coming-soon/index.html"><span class="num">{i:02d}</span>'
-        f'<h3>{html.escape(n)}</h3><p>{html.escape(d)}</p></a>'
-        for i, (n, d) in enumerate(SOON, len(STAGES) + 1))
+        f'<a class="card soon-card" href="{slug}/index.html"><span class="num">{i:02d}</span>'
+        f'<h3>{html.escape(n)}</h3><p>{html.escape(b)}</p>'
+        f'<span class="card-tag">Not published yet</span></a>'
+        for i, (slug, n, b, _) in enumerate(SOON, len(STAGES) + 1))
     page(OUT / "index.html", "Churn Prediction Pipeline — from messy CSV to production on AWS",
          "A free hands-on course: build a churn prediction system step by step, from a dirty CSV to a production pipeline on AWS.",
          f"""<div class="hero">
   <p class="eyebrow">Free course &middot; 7 of 10 stages published</p>
   <h1>A churn model is easy.<br>The pipeline around it is the job.</h1>
   <p class="lede">Start with one dirty CSV from a client. Finish with a system that validates it, scores it, explains itself and tells you when it has gone stale. Every stage is a notebook you can read here and run in Colab.</p>
-  <div class="hero-cta"><a class="run" href="{STAGES[0][0]}/index.html">Start with stage 01</a>
-  <a class="ghost" href="https://github.com/{REPO}">View the repo</a></div>
+  <div class="hero-cta"><a class="run" href="{STAGES[0][0]}/index.html">Start with stage 01</a></div>
 </div>
 <section class="block"><h2>What you end up with</h2>
 <p>A pipeline that takes any client's raw export, maps their column names onto a shared contract, drops the rows that would poison training, builds features, fits an XGBoost model behind evaluation gates, ranks customers by risk with a readable reason attached, and watches for drift once it is live. Bedrock does the column mapping and writes the explanations.</p>
