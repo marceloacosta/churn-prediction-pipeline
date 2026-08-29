@@ -240,7 +240,7 @@ def build():
 </div>
 <div class="wip">
   <p class="wip-tag">Not published yet</p>
-  <p>This stage is still being written. Stages 01 to {len(STAGES):02d} are finished, and you can read and run them now.</p>
+  <p>This stage is still being written.</p>
 </div>
 <article class="prose"><p>{html.escape(detail)}</p></article>
 <div class="runbox">
