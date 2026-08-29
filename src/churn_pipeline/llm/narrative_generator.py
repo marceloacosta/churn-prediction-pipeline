@@ -117,9 +117,10 @@ def build_narrative_prompt(
             sign = "+" if contribution >= 0 else ""
             customers_section += f"  - {feature_name} ({sign}{contribution:.2f})\n"
 
-    prompt = f"""{SYSTEM_PROMPT}
-
-{features_section}For each customer below, write a plain-English paragraph (under 150 words) explaining why they are at risk of leaving. Reference the specific factors listed.
+    # SYSTEM_PROMPT is deliberately absent here: call_bedrock_for_narratives passes
+    # it in the system channel. Including it in the user message too would send the
+    # same instructions twice, and bill for them twice.
+    prompt = f"""{features_section}For each customer below, write a plain-English paragraph (under 150 words) explaining why they are at risk of leaving. Reference the specific factors listed.
 
 Format your response as:
 CUSTOMER_ID: [customer_id]
@@ -178,7 +179,8 @@ def parse_narrative_response(
 
     Args:
         response_text: Raw text from the LLM response.
-        expected_customer_ids: List of customer IDs we expect narratives for.
+        expected_customer_ids: Customer IDs this reply should contain. Any that are
+            missing get a logged warning. Pass an empty list to skip the check.
 
     Returns:
         Dict mapping customer_id to narrative text.
@@ -210,6 +212,13 @@ def parse_narrative_response(
     # Save the last customer
     if current_id is not None:
         narratives[current_id] = " ".join(current_narrative_lines).strip()
+
+    # A batch reply can come back short: the model skips someone, or the response was
+    # truncated. Silence there turns into "N/A" further up with no reason attached, so
+    # say which ones went missing while we still know.
+    for customer_id in expected_customer_ids:
+        if customer_id not in narratives:
+            logger.warning(f"No narrative came back for {customer_id}")
 
     return narratives
 
