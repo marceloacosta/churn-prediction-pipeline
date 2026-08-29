@@ -244,7 +244,7 @@ def build():
 </div>
 <article class="prose"><p>{html.escape(detail)}</p></article>
 <div class="runbox">
-  <p>Stage {n:02d} goes out to the Build with AWS list the day it is published. One email per stage, nothing else.</p>
+  <p>Stage {n:02d} goes out to the Build with AWS list the day it is published.</p>
   <a class="run" href="{SUBSTACK}">Email me when stage {n:02d} is live</a>
 </div>
 <div class="pager"><a class="pager-prev" href="../{prev_slug}/index.html">Previous stage</a>{nxt}</div>""",
