@@ -17,10 +17,10 @@ The LLM does this translation at scale — for dozens of customers in seconds.
 Bedrock call. At ~$0.003 per 1K input tokens, processing 50 customers costs
 roughly $0.01-0.02 per batch. The whole step costs cents, not dollars.
 
-**Failures are counted against a budget.** A customer whose narrative failed is
-recorded with the reason, and "N/A" goes in the output. A run that fails more
-customers than its failure budget raises NarrativeGenerationError and ships
-nothing. Clients keep their SHAP reasons in top_3_reasons either way.
+A customer whose narrative failed is recorded with the reason, and "N/A" goes
+in the output. A run that fails more customers than its failure budget raises
+NarrativeGenerationError and ships nothing. Clients keep their SHAP reasons in
+top_3_reasons either way.
 """
 
 import logging

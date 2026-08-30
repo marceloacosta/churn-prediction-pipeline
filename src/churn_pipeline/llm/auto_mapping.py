@@ -16,9 +16,8 @@ dictionary of synonyms. "MonthlyCharges", "mrr", "monthly_fee", "amt_per_month",
 "recurring_revenue" — the list never ends. An LLM handles all of these because it
 understands language, not just exact matches.
 
-**On failure this step raises.** A failed call surfaces as a BedrockCallError in
-front of the operator running onboarding, no draft is written, and the operator
-writes the YAML by hand. The approval gate downstream does not change either way.
+A failed call raises BedrockCallError, no draft is written, and the operator
+writes the YAML by hand. The approval gate downstream is unchanged either way.
 """
 
 import json

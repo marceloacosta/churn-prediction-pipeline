@@ -11,10 +11,9 @@ and `AWS_DEFAULT_REGION` from the environment on its own, so no function in this
 codebase ever takes a key as an argument. See the "AWS credentials" setup page
 for how those get set in Colab.
 
-**Failures are loud.** A failed call raises BedrockCallError, and the message
-names the cause: an expired key, throttling, a missing region, an unreachable
-service, a reply with no text in it. Each caller decides what a failure means
-for its own step; nothing here pretends a call succeeded.
+A failed call raises BedrockCallError with the cause in the message: an
+expired key, throttling, a missing region, an unreachable service, a reply
+with no text in it. Each caller decides what a failure means for its step.
 """
 
 import os
