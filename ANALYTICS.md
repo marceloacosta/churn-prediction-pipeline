@@ -12,8 +12,8 @@ it. An empty ID disables injection; malformed nonempty IDs fail the build.
 The runtime excludes localhost and preview domains.
 
 The script is identical to the homepage and OCR copies. Keep the three copies
-in sync. GA4 initializes once; its default config and Enhanced Measurement own
-page views. Do not add another tag or manually track page_view.
+in sync. GA4 initializes once; its default config sends page-load views. Shared enhanced
+history page views are disabled because Substack already tracks its routes. Do not add another tag or manually track page_view.
 
 `build_with_aws_click` tracks publication navigation with `page_path`,
 `cta_id`, `cta_intent`, `link_domain`, and query-free `link_url`. Course CTA IDs
@@ -27,8 +27,8 @@ Google loads. The original click still bubbles to Google's linker listener;
 the final decorated href is used for navigation.
 
 Configure exact GA4 domain matches for `marcelops.com`, `www.marcelops.com`,
-and `buildwithaws.substack.com`. Keep enhanced page views (including browser
-history), scrolls and outbound clicks enabled. Register event-scoped custom
+and `buildwithaws.substack.com`. Keep page-load views (with browser
+history disabled), scrolls and outbound clicks enabled. Register event-scoped custom
 dimensions for `cta_id` and `cta_intent` to compare CTAs. Save the same
 **G-YLB0CNYQ8Z** in Substack Settings → Analytics → Google Analytics Measurement
 ID; no Substack application-code changes are needed.
@@ -37,3 +37,9 @@ Verify after publishing that the course sends one page view per page and one
 publication event per click. Check `_gl` on the actual Substack destination
 and matching GA request `cid` and `sid` within the same active session. Verify
 Substack's real subscription event before treating it as a key event.
+
+The shared property marks `build_with_aws_click` as a publication-referral key
+event, once per event, with no default monetary value. It remains separate
+from completed subscriptions. If a future first-party site adopts SPA routing,
+track its route views once in that application; keep shared enhanced history
+tracking off to avoid duplicating Substack article views.

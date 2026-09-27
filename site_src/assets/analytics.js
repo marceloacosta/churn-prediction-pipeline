@@ -11,7 +11,7 @@
   window.dataLayer = window.dataLayer || [];
   window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
   window.gtag('js', new Date());
-  // GA4 owns page views, including history navigation via Enhanced Measurement.
+  // GA4 sends page-load views. Shared history tracking is off: Substack owns its routes.
   // Do not also subscribe to MkDocs location$ or send manual page_view events.
   window.gtag('config', measurementId);
   let googleReady = false;
