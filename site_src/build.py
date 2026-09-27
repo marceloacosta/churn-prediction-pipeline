@@ -1,5 +1,5 @@
 """Build the Churn Prediction Pipeline course site from the module notebooks."""
-import base64, html, json, pathlib, re, shutil
+import base64, html, json, os, pathlib, re, shutil
 
 import markdown
 from pygments import highlight
@@ -12,6 +12,9 @@ OUT = ROOT / "site"
 # so this is machinery for the Run buttons, not a link to the repo.
 REPO = "marceloacosta/churn-prediction-pipeline"
 SUBSTACK = "https://buildwithaws.substack.com/"
+MEASUREMENT_ID = os.environ.get("GA4_MEASUREMENT_ID", "")
+if MEASUREMENT_ID and not re.fullmatch(r"G-[A-Z0-9]+", MEASUREMENT_ID):
+    raise ValueError("GA4_MEASUREMENT_ID must be a GA4 G- ID, or empty for previews")
 
 STAGES = [
     ("01-data-contracts", "Data contracts and mapping", "Every client names things differently. Standardise first."),
@@ -150,16 +153,17 @@ SHELL = """<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{root}assets/style.css">
+{analytics}
 </head><body>
 <header class="top">
   <a class="brand" href="{root}index.html"><span class="brand-mark"></span>Churn Prediction Pipeline</a>
-  <div class="top-right"><a class="cta" href="{substack}">Subscribe</a></div>
+  <div class="top-right"><a class="cta" data-analytics-id="course_header_subscribe" data-analytics-intent="subscribe" href="{substack}">Subscribe</a></div>
 </header>
 <div class="shell">
   <aside class="side">{rail}</aside>
   <main class="main">{body}</main>
 </div>
-<footer class="foot">A free course from <a href="{substack}">Build with AWS</a>.</footer>
+<footer class="foot">A free course from <a data-analytics-id="course_footer" href="{substack}">Build with AWS</a>.</footer>
 <script>
 document.querySelectorAll('.nb-copy').forEach(function(b){{
   b.addEventListener('click', function(){{
@@ -176,13 +180,15 @@ document.querySelectorAll('.nb-copy').forEach(function(b){{
 def page(path, title, desc, body, active=None, root="../"):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(SHELL.format(title=html.escape(title), desc=html.escape(desc), body=body,
-                                 rail=rail(active).replace('href="../', f'href="{root}'), root=root, substack=SUBSTACK))
+                                 rail=rail(active).replace('href="../', f'href="{root}'), root=root, substack=SUBSTACK,
+                                 analytics=(f'<script defer src="{root}assets/analytics.js" data-measurement-id="{MEASUREMENT_ID}" data-build-with-aws-analytics></script>' if MEASUREMENT_ID else "")))
 
 
 def build():
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
+    shutil.copytree(ROOT / "site_src" / "assets", OUT / "assets")
 
     for i, (slug, name, blurb) in enumerate(STAGES, 1):
         nb_path = next((ROOT / "modules" / slug).glob("*.ipynb"))
@@ -245,7 +251,7 @@ def build():
 <article class="prose"><p>{html.escape(detail)}</p></article>
 <div class="runbox">
   <p>Stage {n:02d} goes out to the Build with AWS list the day it is published.</p>
-  <a class="run" href="{SUBSTACK}">Email me when stage {n:02d} is live</a>
+  <a class="run" data-analytics-id="course_stage_notification" data-analytics-intent="subscribe" href="{SUBSTACK}">Email me when stage {n:02d} is live</a>
 </div>
 <div class="pager"><a class="pager-prev" href="../{prev_slug}/index.html">Previous stage</a>{nxt}</div>""",
              active=n)

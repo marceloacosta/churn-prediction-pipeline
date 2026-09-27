@@ -24,6 +24,8 @@ jobs:
           python-version: "3.11"
       - run: pip install markdown pygments
       - run: python site_src/build.py
+        env:
+          GA4_MEASUREMENT_ID: ${{ vars.GA4_MEASUREMENT_ID || 'G-YLB0CNYQ8Z' }}
       - run: mkdir -p site/assets && cp site_src/style.css site/assets/style.css
       - uses: actions/upload-pages-artifact@v3
         with:
