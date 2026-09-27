@@ -22,7 +22,7 @@ are `course_header_subscribe`, `course_footer`, and
 subscription. Colab and other external links use enhanced outbound clicks.
 
 Existing UTMs and Google's `_gl` decoration are preserved. Ordinary same-tab
-publication navigation waits no more than 300 ms for event dispatch after
+publication navigation waits no more than 1000 ms for event dispatch after
 Google loads. The original click still bubbles to Google's linker listener;
 the final decorated href is used for navigation.
 

@@ -64,8 +64,9 @@
         location.assign(element.href); // Read Google's decorated URL after propagation.
       };
       parameters.event_callback = () => setTimeout(follow, 0);
-      parameters.event_timeout = 300;
-      setTimeout(follow, 300); // Navigation still works if analytics is blocked/fails.
+      const navigationTimeout = 1000;
+      parameters.event_timeout = navigationTimeout;
+      setTimeout(follow, navigationTimeout); // Navigation still works if analytics is blocked/fails.
     }
     // Cross-domain destinations are excluded from GA4's outbound `click` event.
     // This is navigation/intent, never evidence of a successful subscription.
